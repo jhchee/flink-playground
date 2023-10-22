@@ -1,0 +1,7 @@
+FROM apache/zeppelin:0.10.1
+ENV FLINK_VERSION=1.16.0
+USER root
+RUN mkdir /opt/flink
+RUN wget --no-verbose -O flink-src.tgz "https://archive.apache.org/dist/flink/flink-${FLINK_VERSION}/flink-${FLINK_VERSION}-src.tgz" \
+    && tar xzf flink-src.tgz --directory /opt/flink --strip-components 1 \
+    && rm -rf flink-src.tgz
