@@ -1,4 +1,4 @@
-package github.jhchee;
+package github.jhchee.apps;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -26,7 +26,7 @@ public class CountWord {
                 .sum(1);
 
         counts.print();
-        env.execute();
+        env.execute("CountWord");
     }
 
     public static final class Tokenizer implements FlatMapFunction<String, Tuple2<String, Integer>> {
@@ -38,7 +38,7 @@ public class CountWord {
 
             // emit the pairs
             for (String token : tokens) {
-                if (token.length() > 0) {
+                if (!token.isEmpty()) {
                     out.collect(new Tuple2<>(token, 1));
                 }
             }

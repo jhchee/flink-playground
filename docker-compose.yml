@@ -43,37 +43,54 @@ services:
       BOOTSTRAP: PLAINTEXT://broker:29092
 
   jobmanager:
-    image: flink:1.16.0-scala_2.12-java11
+    build:
+      context: .
+      dockerfile: Dockerfile-Flink
     hostname: jobmanager
+    command: jobmanager
     ports:
       - "8081:8081"
-    command: jobmanager
+      - "8083:8083"
     environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+        sql-gateway.endpoint.rest.address: localhost
+      - KAFKA_BROKERS=broker:29092
     depends_on:
       - broker
 
-  zeppelin-notebook:
+  taskmanager:
     build:
       context: .
-      dockerfile: Dockerfile-Flink-Zeppelin
-    ports:
-      - "8090:8080"
-    depends_on:
-      - jobmanager
-  taskmanager:
-    image: flink:1.16.0-scala_2.12-java11
+      dockerfile: Dockerfile-Flink
     hostname: taskmanager
     command: taskmanager
     environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
+      - KAFKA_BROKERS=broker:29092
     depends_on:
       - broker
+
+  #  zeppelin-notebook:
+  #    build:
+  #      context: .
+  #      dockerfile: Dockerfile-Flink-Zeppelin
+  #    ports:
+  #      - "8090:8080"
+  #    depends_on:
+  #      - jobmanager
 
   init-kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -86,9 +103,39 @@ services:
       kafka-topics --bootstrap-server broker:29092 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic transfer-event --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic transfer-alert --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic transaction-event --replication-factor 1 --partitions 2
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic transfer-alert --replication-factor 1 --partitions 2
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server broker:29092 --list
+      "
+  minio:
+    image: minio/minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=storage
+      - MINIO_REGION_NAME=us-east-1
+      - MINIO_REGION=us-east-1
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    command: [ "server", "/data", "--console-address", ":9001" ]
+
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc policy set public minio/warehouse;
+      tail -f /dev/null
       "

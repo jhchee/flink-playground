@@ -1,0 +1,10 @@
+FROM flink:1.18.0-scala_2.12-java11
+
+RUN wget --no-verbose -O hadoop-common.jar https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/2.8.3/hadoop-common-2.8.3.jar \
+    && mv hadoop-common.jar /opt/flink/lib/
+
+RUN wget --no-verbose -O flink-shaded-hadoop-2-uber.jar https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/2.8.3-10.0/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar \
+    && mv flink-shaded-hadoop-2-uber.jar /opt/flink/lib/
+
+RUN wget --no-verbose -O bundle-2.20.18.jar https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.20.18/bundle-2.20.18.jar \
+    && mv bundle-2.20.18.jar /opt/flink/lib/

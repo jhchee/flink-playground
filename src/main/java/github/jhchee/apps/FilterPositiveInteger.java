@@ -1,4 +1,4 @@
-package github.jhchee;
+package github.jhchee.apps;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -11,6 +11,6 @@ public class FilterPositiveInteger {
 		DataStream<Long> stream = env.fromSequence(-10, 10).filter(x -> x >= 0);
 		stream.print();
 
-		env.execute("Flink Java API Skeleton");
+		env.execute("FilterPositiveInteger");
 	}
 }
